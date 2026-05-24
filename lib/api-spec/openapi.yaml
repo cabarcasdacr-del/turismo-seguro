@@ -1,0 +1,622 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: API para el sistema de monitoreo de incidentes de inseguridad turística en Cartagena
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: incidentes
+    description: Gestión de incidentes
+  - name: usuarios
+    description: Gestión de usuarios
+  - name: zonas
+    description: Zonas turísticas
+  - name: tipos
+    description: Tipos de incidente
+  - name: stats
+    description: Estadísticas y aggregates
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Credenciales inválidas
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Registrar nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Error de validación
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Obtener usuario actual
+      responses:
+        "200":
+          description: Usuario actual
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+        "401":
+          description: No autenticado
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Cerrar sesión
+      responses:
+        "200":
+          description: Sesión cerrada
+
+  /incidentes:
+    get:
+      operationId: listIncidentes
+      tags: [incidentes]
+      summary: Listar incidentes
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: zona
+          in: query
+          schema:
+            type: string
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: fechaDesde
+          in: query
+          schema:
+            type: string
+        - name: fechaHasta
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de incidentes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidenteListResponse"
+
+    post:
+      operationId: createIncidente
+      tags: [incidentes]
+      summary: Crear incidente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidenteInput"
+      responses:
+        "201":
+          description: Incidente creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incidente"
+
+  /incidentes/{id}:
+    get:
+      operationId: getIncidente
+      tags: [incidentes]
+      summary: Obtener incidente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Incidente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incidente"
+        "404":
+          description: No encontrado
+
+    put:
+      operationId: updateIncidente
+      tags: [incidentes]
+      summary: Actualizar incidente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidenteUpdate"
+      responses:
+        "200":
+          description: Incidente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incidente"
+
+    delete:
+      operationId: deleteIncidente
+      tags: [incidentes]
+      summary: Eliminar incidente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Eliminado
+
+  /incidentes/mis-reportes:
+    get:
+      operationId: getMisReportes
+      tags: [incidentes]
+      summary: Obtener incidentes del usuario actual
+      responses:
+        "200":
+          description: Mis reportes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incidente"
+
+  /usuarios:
+    get:
+      operationId: listUsuarios
+      tags: [usuarios]
+      summary: Listar usuarios (admin)
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Usuario"
+
+  /usuarios/{id}:
+    put:
+      operationId: updateUsuario
+      tags: [usuarios]
+      summary: Actualizar usuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioUpdate"
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+
+    delete:
+      operationId: deleteUsuario
+      tags: [usuarios]
+      summary: Eliminar usuario (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Eliminado
+
+  /zonas:
+    get:
+      operationId: listZonas
+      tags: [zonas]
+      summary: Listar zonas turísticas
+      responses:
+        "200":
+          description: Lista de zonas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ZonaTuristica"
+
+  /tipos-incidente:
+    get:
+      operationId: listTiposIncidente
+      tags: [tipos]
+      summary: Listar tipos de incidente
+      responses:
+        "200":
+          description: Lista de tipos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TipoIncidente"
+
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Estadísticas del dashboard
+      responses:
+        "200":
+          description: Estadísticas generales
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /stats/zonas-riesgo:
+    get:
+      operationId: getZonasRiesgo
+      tags: [stats]
+      summary: Zonas con más incidentes (aggregate)
+      responses:
+        "200":
+          description: Zonas ordenadas por incidentes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ZonaRiesgoStat"
+
+  /stats/tipos-frecuentes:
+    get:
+      operationId: getTiposFrecuentes
+      tags: [stats]
+      summary: Tipos de incidentes más frecuentes (aggregate)
+      responses:
+        "200":
+          description: Tipos por frecuencia
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TipoFrecuenciaStat"
+
+  /stats/incidentes-por-mes:
+    get:
+      operationId: getIncidentesPorMes
+      tags: [stats]
+      summary: Incidentes agrupados por mes (aggregate)
+      responses:
+        "200":
+          description: Incidentes por mes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IncidenteMesStat"
+
+  /stats/top-reporteros:
+    get:
+      operationId: getTopReporteros
+      tags: [stats]
+      summary: Usuarios con más reportes (aggregate)
+      responses:
+        "200":
+          description: Top usuarios reporteros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReporteroStat"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    LoginInput:
+      type: object
+      required: [correo, contrasena]
+      properties:
+        correo:
+          type: string
+        contrasena:
+          type: string
+
+    RegisterInput:
+      type: object
+      required: [nombre, correo, contrasena]
+      properties:
+        nombre:
+          type: string
+        correo:
+          type: string
+        contrasena:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [usuario, token]
+      properties:
+        usuario:
+          $ref: "#/components/schemas/Usuario"
+        token:
+          type: string
+
+    Usuario:
+      type: object
+      required: [_id, nombre, correo, rol]
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        correo:
+          type: string
+        rol:
+          type: string
+          enum: [administrador, turista]
+        fechaRegistro:
+          type: ["string", "null"]
+
+    UsuarioUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        correo:
+          type: string
+        rol:
+          type: string
+          enum: [administrador, turista]
+
+    Incidente:
+      type: object
+      required: [_id, descripcion, fecha]
+      properties:
+        _id:
+          type: string
+        tipoId:
+          type: ["string", "null"]
+        usuarioId:
+          type: ["string", "null"]
+        zonaId:
+          type: ["string", "null"]
+        descripcion:
+          type: string
+        fecha:
+          type: string
+        ubicacion:
+          type: ["string", "null"]
+        etiquetas:
+          type: array
+          items:
+            type: string
+        tipoNombre:
+          type: ["string", "null"]
+        zonaNombre:
+          type: ["string", "null"]
+        usuarioNombre:
+          type: ["string", "null"]
+
+    IncidenteInput:
+      type: object
+      required: [descripcion]
+      properties:
+        tipoId:
+          type: string
+        zonaId:
+          type: string
+        descripcion:
+          type: string
+        ubicacion:
+          type: string
+        etiquetas:
+          type: array
+          items:
+            type: string
+
+    IncidenteUpdate:
+      type: object
+      properties:
+        tipoId:
+          type: string
+        zonaId:
+          type: string
+        descripcion:
+          type: string
+        ubicacion:
+          type: string
+        etiquetas:
+          type: array
+          items:
+            type: string
+
+    IncidenteListResponse:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Incidente"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ZonaTuristica:
+      type: object
+      required: [_id, nombre]
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        ciudad:
+          type: ["string", "null"]
+        nivelRiesgo:
+          type: ["string", "null"]
+
+    TipoIncidente:
+      type: object
+      required: [_id, nombre]
+      properties:
+        _id:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: ["string", "null"]
+
+    DashboardStats:
+      type: object
+      required: [totalIncidentes, totalUsuarios, totalZonas, incidentesHoy]
+      properties:
+        totalIncidentes:
+          type: integer
+        totalUsuarios:
+          type: integer
+        totalZonas:
+          type: integer
+        incidentesHoy:
+          type: integer
+        incidentesEsteMes:
+          type: integer
+
+    ZonaRiesgoStat:
+      type: object
+      required: [zonaId, zonaNombre, total]
+      properties:
+        zonaId:
+          type: string
+        zonaNombre:
+          type: string
+        total:
+          type: integer
+        nivelRiesgo:
+          type: ["string", "null"]
+
+    TipoFrecuenciaStat:
+      type: object
+      required: [tipoId, tipoNombre, total]
+      properties:
+        tipoId:
+          type: string
+        tipoNombre:
+          type: string
+        total:
+          type: integer
+
+    IncidenteMesStat:
+      type: object
+      required: [mes, total]
+      properties:
+        mes:
+          type: string
+        total:
+          type: integer
+        anio:
+          type: integer
+
+    ReporteroStat:
+      type: object
+      required: [usuarioId, usuarioNombre, total]
+      properties:
+        usuarioId:
+          type: string
+        usuarioNombre:
+          type: string
+        total:
+          type: integer
+        correo:
+          type: ["string", "null"]
